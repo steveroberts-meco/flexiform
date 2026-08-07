@@ -142,11 +142,22 @@ function App() {
     };
 
     try {
-      const { error: dbError } = await supabase
-        .from("contact_form")
-        .insert([payload]);
+      // Use fetch directly to Supabase REST API to avoid client-level issues
+      const insertRes = await fetch(`${supabaseUrl}/rest/v1/contact_form`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "apikey": supabaseAnonKey,
+          "Authorization": `Bearer ${supabaseAnonKey}`,
+          "Prefer": "return=minimal",
+        },
+        body: JSON.stringify(payload),
+      });
 
-      if (dbError) throw new Error(dbError.message);
+      if (!insertRes.ok) {
+        const errText = await insertRes.text();
+        throw new Error(`Submission failed: ${errText}`);
+      }
 
       // Send notification + confirmation email via edge function
       try {
@@ -172,6 +183,7 @@ function App() {
 
       setIsSubmitted(true);
     } catch (err) {
+      console.error("Form submission error:", err);
       setErrorMessage(
         err instanceof Error ? err.message : "Failed to send. Please try again.",
       );
