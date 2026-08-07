@@ -141,24 +141,14 @@ function App() {
       message: data.message,
     };
 
-    const isFigmaPreview =
-      window.location.hostname.includes("figma.com") ||
-      window.location.hostname.includes("figma.site") ||
-      window.location.hostname.includes("figmaiframepreview");
-
     try {
-      if (isFigmaPreview) {
-        await new Promise((r) => setTimeout(r, 800));
-        setIsSubmitted(true);
-        return;
-      }
-
       const { error: dbError } = await supabase
         .from("contact_form")
         .insert([payload]);
 
       if (dbError) throw new Error(dbError.message);
 
+      // Send notification + confirmation email via edge function
       try {
         await fetch(`${supabaseUrl}/functions/v1/make-server-bc7634d5`, {
           method: "POST",
@@ -173,6 +163,7 @@ function App() {
             budget: savedData.budget ?? null,
             currentStage: savedData.currentStage ?? null,
             message: data.message,
+            sendConfirmation: true,
           }),
         });
       } catch {
@@ -204,7 +195,7 @@ function App() {
     <button
       type="button"
       onClick={() => goToStep(to)}
-      className="py-3 px-6 md:py-4 md:px-8 rounded-full border-2 border-gray-600 text-gray-300 hover:border-white hover:text-white transition-colors duration-200 flex items-center gap-2 text-base md:text-lg"
+      className="py-3 px-6 md:py-4 md:px-8 rounded-full border-2 border-white/60 text-white hover:border-white hover:bg-white/10 transition-colors duration-200 flex items-center gap-2 text-base md:text-lg"
     >
       <ArrowLeft className="w-4 h-4 md:w-5 md:h-5" />
       <span>Back</span>
@@ -225,8 +216,8 @@ function App() {
           onClick={() => onSelect(item)}
           className={`p-4 md:p-5 border-2 rounded-none text-left transition-colors duration-150 text-sm md:text-base leading-snug ${
             selected === item
-              ? "border-white bg-white/10 text-white"
-              : "border-gray-600 text-gray-300 hover:border-gray-400 hover:text-white hover:bg-white/5"
+              ? "border-white bg-white/20 text-white"
+              : "border-white/40 text-white/80 hover:border-white hover:text-white hover:bg-white/10"
           }`}
         >
           {item}
@@ -236,7 +227,7 @@ function App() {
   );
 
   return (
-    <div className="min-h-screen bg-[#212121] flex items-center justify-center p-4 sm:p-8">
+    <div className="min-h-screen bg-[#4C9B9A] flex items-center justify-center p-4 sm:p-8">
       <div className="w-full max-w-5xl px-0 sm:px-6 lg:px-12 py-16 sm:py-20">
         {isSubmitted ? (
           <motion.div
@@ -245,16 +236,19 @@ function App() {
             transition={{ duration: 0.4 }}
             className="text-center py-12"
           >
-            <CheckCircle2 className="w-16 h-16 text-[#4C9B9A] mx-auto mb-5" />
+            <CheckCircle2 className="w-16 h-16 text-white mx-auto mb-5" />
             <h2 className="text-2xl md:text-4xl text-white mb-3 font-light tracking-tight">
               Message sent.
             </h2>
-            <p className="text-gray-400 text-base md:text-lg mb-8 max-w-sm mx-auto">
+            <p className="text-white/80 text-base md:text-lg mb-3 max-w-sm mx-auto">
               Thanks for reaching out — I'll get back to you shortly.
+            </p>
+            <p className="text-white/70 text-sm mb-8 max-w-sm mx-auto">
+              A confirmation email has been sent to {savedData.email}.
             </p>
             <button
               onClick={resetForm}
-              className="text-[#4C9B9A] hover:text-white transition-colors duration-200 underline underline-offset-4 text-base"
+              className="text-white underline underline-offset-4 hover:text-[#212121] transition-colors duration-200 text-base"
             >
               Send another message
             </button>
@@ -276,11 +270,11 @@ function App() {
                     <h1 className="text-3xl sm:text-5xl lg:text-6xl text-white font-light tracking-tight leading-tight mb-3">
                       <span className="font-bold">Have something in mind?</span>
                       <br />
-                      <span className="text-2xl sm:text-4xl lg:text-5xl text-gray-400">
+                      <span className="text-2xl sm:text-4xl lg:text-5xl text-white/70">
                         Would like to work with me?
                       </span>
                     </h1>
-                    <p className="text-lg sm:text-2xl text-gray-400">
+                    <p className="text-lg sm:text-2xl text-white/70">
                       Let's start with your details
                     </p>
                   </div>
@@ -289,7 +283,7 @@ function App() {
                     <div>
                       <label
                         htmlFor="name"
-                        className="block text-sm text-gray-400 mb-2 tracking-wide uppercase"
+                        className="block text-sm text-white/70 mb-2 tracking-wide uppercase"
                       >
                         Name
                       </label>
@@ -300,19 +294,19 @@ function App() {
                           required: "Name is required",
                           minLength: { value: 2, message: "At least 2 characters" },
                         })}
-                        className="w-full pb-3 border-b-2 border-gray-600 focus:border-white outline-none transition-colors duration-200 bg-transparent text-white placeholder-gray-600 text-lg"
+                        className="w-full pb-3 border-b-2 border-white/40 focus:border-white outline-none transition-colors duration-200 bg-transparent text-white placeholder-white/30 text-lg"
                         placeholder="Your name"
                         autoComplete="name"
                       />
                       {errors.name && (
-                        <p className="mt-2 text-sm text-red-400">{errors.name.message}</p>
+                        <p className="mt-2 text-sm text-[#212121]">{errors.name.message}</p>
                       )}
                     </div>
 
                     <div>
                       <label
                         htmlFor="email"
-                        className="block text-sm text-gray-400 mb-2 tracking-wide uppercase"
+                        className="block text-sm text-white/70 mb-2 tracking-wide uppercase"
                       >
                         Email
                       </label>
@@ -326,12 +320,12 @@ function App() {
                             message: "Invalid email address",
                           },
                         })}
-                        className="w-full pb-3 border-b-2 border-gray-600 focus:border-white outline-none transition-colors duration-200 bg-transparent text-white placeholder-gray-600 text-lg"
+                        className="w-full pb-3 border-b-2 border-white/40 focus:border-white outline-none transition-colors duration-200 bg-transparent text-white placeholder-white/30 text-lg"
                         placeholder="your@email.com"
                         autoComplete="email"
                       />
                       {errors.email && (
-                        <p className="mt-2 text-sm text-red-400">{errors.email.message}</p>
+                        <p className="mt-2 text-sm text-[#212121]">{errors.email.message}</p>
                       )}
                     </div>
                   </div>
@@ -342,8 +336,8 @@ function App() {
                     disabled={!canProceedStep1}
                     className={`py-3 px-7 md:py-4 md:px-9 rounded-full transition-colors duration-200 flex items-center gap-2 text-base md:text-lg font-medium ${
                       canProceedStep1
-                        ? "bg-[#4C9B9A] hover:bg-[#3a7f7e] text-white cursor-pointer"
-                        : "bg-gray-700 text-gray-500 cursor-not-allowed"
+                        ? "bg-[#212121] hover:bg-black text-white cursor-pointer"
+                        : "bg-black/20 text-white/40 cursor-not-allowed"
                     }`}
                   >
                     Continue
@@ -454,7 +448,7 @@ function App() {
                       <textarea
                         rows={6}
                         {...register("message")}
-                        className="w-full px-4 py-4 border-2 border-gray-600 rounded-lg focus:border-white outline-none transition-colors duration-200 resize-none bg-transparent text-white placeholder-gray-600 text-base md:text-lg"
+                        className="w-full px-4 py-4 border-2 border-white/40 rounded-lg focus:border-white outline-none transition-colors duration-200 resize-none bg-transparent text-white placeholder-white/30 text-base md:text-lg"
                         placeholder="Tell me more about your project..."
                       />
                     </div>
@@ -467,8 +461,8 @@ function App() {
                         disabled={isSubmitting}
                         className={`flex-1 py-3 px-6 md:py-4 md:px-8 rounded-full transition-colors duration-200 flex items-center justify-center gap-2 text-base md:text-lg font-medium ${
                           !isSubmitting
-                            ? "bg-[#4C9B9A] hover:bg-[#3a7f7e] text-white cursor-pointer"
-                            : "bg-gray-700 text-gray-500 cursor-not-allowed"
+                            ? "bg-[#212121] hover:bg-black text-white cursor-pointer"
+                            : "bg-black/20 text-white/40 cursor-not-allowed"
                         }`}
                       >
                         {isSubmitting ? "Sending..." : "Send message"}
@@ -480,12 +474,12 @@ function App() {
 
                     {errorMessage && (
                       <div className="mt-4 text-center">
-                        <p className="text-sm text-red-400">{errorMessage}</p>
-                        <p className="text-sm text-gray-400 mt-1">
+                        <p className="text-sm text-[#212121]">{errorMessage}</p>
+                        <p className="text-sm text-white/70 mt-1">
                           Please email us directly at{" "}
                           <a
                             href="mailto:mail@meandcollective.com"
-                            className="text-white underline underline-offset-4 hover:text-[#4C9B9A] transition-colors duration-200"
+                            className="text-white underline underline-offset-4 hover:text-[#212121] transition-colors duration-200"
                           >
                             mail@meandcollective.com
                           </a>
