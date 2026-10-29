@@ -239,8 +239,8 @@ function App() {
   );
 
   return (
-    <div className="min-h-screen bg-[#4C9B9A] flex items-center justify-center p-4 sm:p-8">
-      <div className="w-full max-w-5xl px-0 sm:px-6 lg:px-12 py-16 sm:py-20">
+    <div className="min-h-screen bg-[#4C9B9A] flex items-start justify-start">
+      <div className="w-full max-w-5xl">
         {isSubmitted ? (
           <motion.div
             initial={{ opacity: 0, scale: 0.92 }}
